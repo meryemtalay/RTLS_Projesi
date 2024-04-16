@@ -23,4 +23,4 @@ Bu proje, MQTT protokolü üzerinden gelen verileri dinleyerek gerçek zamanlı 
 4. Sunucuyu başlatmak için `node server.js` komutunu çalıştırın.
 5. Tarayıcıda `http://localhost:3000` adresine gidin.
 
-![rtlsfoto](https://github.com/meryemtalay/RTLS_Projesi/assets/73894202/0d96e8a2-d9f4-4ebd-90b1-3a6bf6ff10ee)
+![rtlsfoto](https://github.com/meryemtalay/RTLS_Projesi/assets/73894202/1a87ab39-e077-480d-a3c3-b0a0cfd4cdfc)
