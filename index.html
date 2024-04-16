@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>rtls</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    />
+
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+      }
+      #canvas-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative; /* Konumlandırmak için gerekli */
+      }
+      #canvas {
+        border: 2px solid #000;
+        margin-top: 15px;
+      }
+      #warning-message {
+        position: absolute;
+        top: 20px; /* Yasaklı bölgeye göre ayarlanacak */
+        left: auto; /* Yasaklı bölgeye göre ayarlanacak */
+        background-color: rgb(212, 237, 218);
+        padding: 10px;
+        border-radius: 5px;
+        display: none;
+      }
+      #counter {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      #value-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        width: 300px;
+        padding: 15px;
+        background-color: #f0f0f0;
+        border-radius: 15px;
+        border: 2px solid #ccc;
+      }
+
+      #x-value,
+      #y-value,
+      #z-value {
+        padding: 5px;
+        border-radius: 5px;
+      }
+
+      #value-container > div {
+        margin-right: 20px;
+        font-size: 20px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container">
+      <canvas id="canvas" width="903" height="540"></canvas>
+      <div id="warning-message">Dikkat: Yasaklı bölgeye girdiniz!</div>
+      <div id="counter">0</div>
+    </div>
+
+    <div id="value-container">
+      <div id="x-value">X:</div>
+      <div id="y-value">Y:</div>
+      <div id="z-value">Z:</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const socket = io("http://localhost:3000");
+
+      const fixedRadius = 12;
+      const trailColors = ["cyan", "orange", "yellow"];
+      const trailPositions = [];
+      const forbiddenArea = { x: 650, y: 90, width: 135, height: 135 }; // Yasaklı bölgenin koordinatları ve alanı
+
+      let backgroundImage = new Image();
+      backgroundImage.src = "background3.JPG"; // Resmin yolu
+
+      let counter = 0;
+      let isInForbiddenAreaFlag = false;
+
+      socket.on("mqtt_message", (data) => {
+        const parsedData = JSON.parse(data);
+        console.log(parsedData);
+        drawXYZ(parsedData.x, parsedData.y, parsedData.z);
+      });
+
+      const userName = prompt("Dairenin üzerine yazılacak ismi girin:");
+
+      // // Kullanıcı boş bir isim girdiyse varsayılan olarak "İsim Yok" atanır
+      const displayName = userName.trim() ? userName.trim() : "İsim Yok";
+
+      function drawXYZ(x, y, z) {
+        const ratioX = canvas.width / 10;
+        const ratioY = canvas.height / 6;
+
+        x = Math.min(Math.max(x, 0.2), 9.8);
+        y = Math.min(Math.max(y, 0.2), 5.8);
+
+        const newX = canvas.width - (x * ratioX + fixedRadius);
+        const newY = canvas.height - (y * ratioY + fixedRadius);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+
+        // Yasaklı bölgeyi çiz
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(255, 0, 0, 0.3)"; // Kırmızı ve yarı saydam
+        ctx.fillRect(
+          forbiddenArea.x,
+          forbiddenArea.y,
+          forbiddenArea.width,
+          forbiddenArea.height
+        );
+        ctx.fill();
+
+        // Daire yasaklı bölgeye girerse uyarı mesajı göster
+        if (isInForbiddenArea(x, y)) {
+          if (!isInForbiddenAreaFlag) {
+            document.getElementById("warning-message").style.display = "block";
+            counter++;
+            document.getElementById("counter").innerText = counter;
+            isInForbiddenAreaFlag = true;
+          }
+        } else {
+          document.getElementById("warning-message").style.display = "none";
+          isInForbiddenAreaFlag = false;
+        }
+
+        ctx.lineWidth = 4; //izlerin kalınlığı
+
+        // Daire izlerini çiz
+        for (let i = 1; i < trailPositions.length; i++) {
+          const [prevX, prevY, prevZ, color, label] = trailPositions[i - 1];
+          const [currentX, currentY, currentZ, currentColor] =
+            trailPositions[i];
+          const prevIX = canvas.width - (prevX * ratioX + fixedRadius);
+          const prevIY = canvas.height - (prevY * ratioY + fixedRadius);
+          const currentIX = canvas.width - (currentX * ratioX + fixedRadius);
+          const currentIY = canvas.height - (currentY * ratioY + fixedRadius);
+          ctx.beginPath();
+          ctx.moveTo(prevIX, prevIY);
+          ctx.lineTo(currentIX, currentIY);
+          ctx.strokeStyle = currentColor;
+          ctx.stroke();
+        }
+
+        // Daireyi çiz
+        ctx.beginPath();
+        ctx.arc(newX, newY, fixedRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.stroke();
+
+        // etiketin adını yazdırır
+        ctx.fillStyle = "black";
+        ctx.font = "bold 12px Arial";
+        ctx.fillText(displayName, newX - 15, newY - 20);
+
+        document.getElementById("x-value").innerText = `X: ${x.toFixed(2)}`;
+        document.getElementById("y-value").innerText = `Y: ${y.toFixed(2)}`;
+        document.getElementById("z-value").innerText = ` Z:${z.toFixed(2)}`;
+
+        // Etiketlerin değerlerini çizer
+        // ctx.fillStyle = "rgb(102, 84, 94)";
+        // ctx.font = "12px Arial";
+        // ctx.fillText(`X: ${x.toFixed(2)}`, newX - 15, newY - 5);
+        // ctx.fillText(`Y: ${y.toFixed(2)}`, newX - 15, newY + 10);
+        // ctx.fillText(`Z: ${z.toFixed(2)}`, newX - 15, newY + 25);
+
+        // Dairenin izini izler dizisine ekle
+        trailPositions.push([
+          x,
+          y,
+          z,
+          trailColors[trailPositions.length % 3],
+          "X",
+        ]); // Örnek bir iz ekleme, izin rengi ve etiketi değiştirilebilir
+      }
+
+      // daire yasak bölgenin içinde mi kontrol edilir
+      function isInForbiddenArea(x, y) {
+        const circleCenterX =
+          canvas.width - (x * (canvas.width / 10) + fixedRadius);
+        const circleCenterY =
+          canvas.height - (y * (canvas.height / 6) + fixedRadius);
+
+        const circleRadius = fixedRadius;
+
+        const rectLeft = forbiddenArea.x;
+        const rectRight = forbiddenArea.x + forbiddenArea.width;
+        const rectTop = forbiddenArea.y;
+        const rectBottom = forbiddenArea.y + forbiddenArea.height;
+
+        const insideX = circleCenterX >= rectLeft && circleCenterX <= rectRight;
+        const insideY = circleCenterY >= rectTop && circleCenterY <= rectBottom;
+
+        const touchingLeft =
+          circleCenterX - circleRadius <= rectRight &&
+          circleCenterX - circleRadius >= rectLeft;
+        const touchingRight =
+          circleCenterX + circleRadius >= rectLeft &&
+          circleCenterX + circleRadius <= rectRight;
+        const touchingTop =
+          circleCenterY - circleRadius <= rectBottom &&
+          circleCenterY - circleRadius >= rectTop;
+        const touchingBottom =
+          circleCenterY + circleRadius >= rectTop &&
+          circleCenterY + circleRadius <= rectBottom;
+
+        return insideX && insideY;
+      }
+    </script>
+  </body>
+</html>

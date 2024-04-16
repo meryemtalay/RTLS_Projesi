@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        #login-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #login-container h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        #login-form div {
+            margin-bottom: 10px;
+        }
+
+        #login-form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        #login-form input[type="text"],
+        #login-form input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        #login-form button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #login-form button:hover {
+            background-color: #0056b3;
+        }
+
+        #error-message {
+            color: red;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        #logo {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="logo">
+        <img src="logo.png" alt="Logo" width="100">
+    </div>
+    <div id="login-container">
+        <h2>Login</h2>
+        <form id="login-form">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <div id="error-message">Invalid username or password.</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        document.getElementById("login-form").addEventListener("submit", function(event) {
+    event.preventDefault();
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    // Burada kullanıcı adı ve şifreyi kontrol ediyoruz.
+    // Şimdilik sabit bir kullanıcı adı ve şifre ile kontrol edelim:
+    if (username === "admin" && password === "123") {
+        // Doğru giriş yapıldı, sunucuyu başlatmak için ilgili URL'ye yönlendirme yapabiliriz.
+        window.location.href = "http://localhost:3000/";
+    } else {
+        // Hatalı giriş durumunda hata mesajını göster.
+        document.getElementById("error-message").style.display = "block";
+    }
+});
+    </script>
+</body>
+</html>
